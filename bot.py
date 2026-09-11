@@ -1,160 +1,68 @@
-import sqlite3
-import random
-import time
-import asyncio
-import os
-from datetime import datetime
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
-from flask import Flask
-import threading
+Sən təcrübəli Python və Telegram Bot mütəxəssisisən. Mənə Python dilində "python-telegram-bot==20.7" və "Flask" kitabxanalarından istifadə edən, Render platformasında host olunmaq üçün uyğun (Flask serveri ilə birgə) tam işlək və səhvsiz bir Telegram bot kodu (`bot.py`) yaz. Botun strukturu və qaydaları aşağıdakı kimi olmalıdır:
 
-web_app = Flask(__name__)
+1. Başlanğıc və Dillər:
+- Bot açılan kimi istifadəçiyə dil seçimi gəlməlidir: Azərbaycan, Türk, Rus, İngilis.
+- Dillər seçildikdən sonra məzənnə göstərilməlidir: Adi üzv üçün 1000 xal -> 0.05$ | VIP üzv üçün 1000 xal -> 0.08$.
+- Bundan sonra əsas menyu açılmalıdır.
 
-@web_app.route('/')
-def home():
-    return "Bot is running!"
+2. Əsas Menyu Düymələri (Inline):
+- Çarx
+- Balans
+- Referal
+- Tapşırıqlar
+- Vip
+- Çıxarış
+- Məlumat
+- Dil dəyiş
+- Rəsmi kanal (https://t.me/+ZMvnUmwWkJ0wZDI0)
+- Bot bildirişləri aktivləşdir
 
-def run_web():
-    port = int(os.environ.get("PORT", 10000))
-    web_app.run(host="0.0.0.0", port=port)
+3. Çarx Mexanizmi:
+- Gündəlik 50 ədəd pulsuz çarx haqqı olmalı, yenilənmə 24 saatdan bir baş verməlidir.
+- 50 çarx bitdikdən sonra 10 ədəd hədiyyə/bonus çarx tələb etmək imkanı olmalıdır.
+- İstifadəçinin statusuna uyğun olaraq (Adi və ya VIP) xallar avtomatik tənzimlənməlidir:
+  * Adi user xalları: 35 xal (20%), 45 xal (20%), 55 xal (20%), 65 xal (10%), Boş 0 xal (20%), Hədiyyə çarx (10%). Hədiyyə çarxda: 2 fırlanma (50%), 3 fırlanma (30%), 5 fırlanma (20%). (Məsələn, 2 fırlanma çıxıbsa və userin 10 çarxı qalıbsa, 12 olmalıdır).
+  * VIP user xalları: 60 xal (20%), 80 xal (20%), 100 xal (20%), 120 xal (10%), Boş 0 xal (20%), Hədiyyə çarx (10%). Hədiyyə çarx eyni qaydada.
+- 50 çarxı tamamlamaqla qazanılan 10 bonus fırlatma haqqında 4 xal sistemi olsun: 15, 20, 25, 30 xal.
+- "Çarxı yenidən fırlat" düyməsi olsun. Bu düyməyə basıldıqda köhnə mesaj silinib yenisi gəlsin, lakin xallar balansda qalsın.
 
-BOT_TOKEN = "8982385389:AAESNUF2bHc8kOqKPBGph7_369O4UPbZDyQ"
-BOT_USERNAME = "USDT_Qazan_bot"
-ADMIN_USERNAME = "@kullanc234"
-TRC20_WALLET = "TKf5cMmCqjR76gN62Vim9BaP3G5XL4a7kp"
-CHANNELS = ["@qizilanaliz", "@mercvekuponlarr", "@craftbetting"]
+4. Balans Bölməsi:
+- Başlıq: "Sizi USDT Bot-da görməkdən məmnunuq"
+- Ümumi balans, referaldan əldə olunan balans, referal sayı (adi/vip), status (vip/adi) göstərilsin.
 
-TEXTS = {
-    "az": {
-        "welcome": "👋 Salam! Zəhmət olmasa dil seçin:",
-        "main_menu": "Əsas Menyu:",
-        "spin_btn": "🎰 Çarx", "points_btn": "💰 Balans", "ref_btn": "👥 Referal",
-        "task_btn": "📢 Tapşırıqlar", "vip_btn": "👑 VIP", "withdraw_btn": "💸 Çıxarış",
-        "info_btn": "ℹ️ Məlumat", "lang_btn": "🌐 Dil Dəyiş", "back": "🔙 Geri",
-        "info_text": (
-            "ℹ️ **Sistem Məlumatı və Qaydalar**\n\n"
-            "🎰 **Çarx Mükafatları:**\n"
-            "• Xallar: 15, 25, 35, 45, 55 xal\n"
-            "💳 TRC20 Adres: `{TRC20_WALLET}`\n"
-        ),
-        "vip_text": (
-            "👑 **VIP Paketləri**\n\n"
-            "Ödəniş üçün TRC20 (USDT) adresi:\n`{TRC20_WALLET}`\n\n"
-            "Ödəniş etdikdən sonra çeki {ADMIN_USERNAME} ünvanına göndərin."
-        )
-    }
-}
+5. Referal Sistemi:
+- Referal linki yaratmaq (`https://t.me/BOT_USERNAME?start=USER_ID`).
+- Adi və VIP referal sayları, referallardan gələn ümumi gəlir qeyd olunsun.
+- Hər 1000 xalı olan referaldan 20 xal onu gətirənə verilsin.
+- "Referalları yoxla" düyməsi ilə açılan pəncərədə referalların ID kodu, xalları və onlardan qazanılan xal görünsün.
+- Gətirilən referal 5 gün bota daxil olmasa, onun xalı artıq hesablanmasın.
 
-def get_db():
-    conn = sqlite3.connect("wheel_bot.db")
-    conn.row_factory = sqlite3.Row
-    return conn
+6. Tapşırıqlar Bölməsi:
+- Kanallar:
+  1. https://t.me/craftbetting
+  2. https://t.me/mercvekuponlarr
+  3. https://t.me/qizilanaliz
+  4. https://t.me/+ZMvnUmwWkJ0wZDI0
+- Bütün kanallara qoşulanlara 100 xal verilsin. "Yoxla" düyməsi ilə bot bunu nəzarətdə saxlasın.
 
-def init_db():
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        user_id INTEGER PRIMARY KEY,
-        points INTEGER DEFAULT 0,
-        bonus_spins INTEGER DEFAULT 0,
-        vip_until TEXT,
-        referrer_id INTEGER,
-        last_spin_reset INTEGER DEFAULT 0,
-        daily_spin_count INTEGER DEFAULT 0,
-        notify_enabled INTEGER DEFAULT 1,
-        lang TEXT DEFAULT 'az'
-    )
-    """)
-    conn.commit()
-    conn.close()
+7. VIP Bölməsi və Ödənişlər:
+- VIP mahiyyəti, yüksək xal və çıxarış limitləri qeyd olunsun.
+- Qiymətlər: 7 günlük -> 3$, 15 günlük -> 5$.
+- Ödənişlər TRC20 (USDT) ünvanına edilir: `TKf5cMmCqjR76gN62Vim9BaP3G5XL4a7kp`
+- Ödəniş qəbzi və ID kodu @usdtqazanadmin ünvanına göndərilməlidir.
 
-init_db()
+8. Çıxarış Bölməsi (Adi və VIP ayrı olmalıdır):
+- Adi user üçün:
+  * Maksimum 300 000 xal -> 15$ (Şərt: 10 adi üzv və 1 VIP referal)
+  * Maksimum 400 000 xal -> 15$ (Şərt: 10 adi üzv referal)
+- VIP user üçün:
+  * Maksimum 250 000 xal -> 20$ (Şərt: 10 adi üzv referal)
+  * Maksimum 300 000 xal -> 25$ (Şərt: 5 adi üzv referal)
+- Şərtlər ödəndiydən sonra @usdtqazanadmin hesabına ID kod atılaraq müraciət edilsin.
 
-def get_user(user_id):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
-    user = cursor.fetchone()
-    conn.close()
-    return user
+9. Məlumat, Rəsmi Kanal və Bildirişlər:
+- Məlumat: Botun pulsuz olması, referal sistemi, şikayət üçün @usdtqazanadmin və TRC20 izahı.
+- Rəsmi kanal: https://t.me/+ZMvnUmwWkJ0wZDI0
+- Bildirişlər: User 24 saat botu aktiv etsə əlavə 200 xal verilsin. Çarx olduqda və referaldan 200 xal gəldikdə bildiriş göndərilsin.
 
-def create_user(user_id, referrer_id=None):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-    INSERT OR IGNORE INTO users (user_id, points, bonus_spins, referrer_id, lang, last_spin_reset, daily_spin_count, notify_enabled)
-    VALUES (?, 0, 0, ?, 'az', 0, 0, 1)
-    """, (user_id, referrer_id))
-    conn.commit()
-    conn.close()
-
-def main_menu_keyboard(lang):
-    t = TEXTS.get(lang, TEXTS['az'])
-    keyboard = [
-        [InlineKeyboardButton(t["spin_btn"], callback_data="spin_menu"), InlineKeyboardButton(t["points_btn"], callback_data="my_points")],
-        [InlineKeyboardButton(t["ref_btn"], callback_data="referral"), InlineKeyboardButton(t["task_btn"], callback_data="tasks")],
-        [InlineKeyboardButton(t["vip_btn"], callback_data="vip_menu"), InlineKeyboardButton(t["withdraw_btn"], callback_data="withdraw")],
-        [InlineKeyboardButton(t["info_btn"], callback_data="info")]
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if not get_user(user_id):
-        create_user(user_id)
-    await update.message.reply_text("👋 Salam! Əsas Menyu:", reply_markup=main_menu_keyboard('az'))
-
-async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    user_id = query.from_user.id
-    data = query.data
-    user = get_user(user_id)
-
-    if data == "main_menu":
-        await query.edit_message_text("Əsas Menyu:", reply_markup=main_menu_keyboard('az'))
-    elif data == "spin_menu":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🌀 Çarxı Fırlat", callback_data="do_spin"), InlineKeyboardButton("🔙 Geri", callback_data="main_menu")]])
-        await query.edit_message_text("🎰 Şans Çarxı", reply_markup=kb)
-    elif data == "do_spin":
-        res_val = random.choice([15, 25, 35, 45, 55])
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET points = points + ? WHERE user_id = ?", (res_val, user_id))
-        conn.commit()
-        conn.close()
-        await query.message.reply_text(f"🎉 {res_val} Xal qazandınız!")
-    elif data == "my_points":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Geri", callback_data="main_menu")]])
-        await query.edit_message_text(f"💰 Xalınız: {user['points']}", reply_markup=kb)
-    elif data == "referral":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Geri", callback_data="main_menu")]])
-        await query.edit_message_text("👥 Referal linkiniz aktivdir.", reply_markup=kb)
-    elif data == "tasks":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Geri", callback_data="main_menu")]])
-        await query.edit_message_text("📢 Tapşırıqlar siyahısı", reply_markup=kb)
-    elif data == "vip_menu":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Geri", callback_data="main_menu")]])
-        await query.edit_message_text("👑 VIP Paketlər", reply_markup=kb)
-    elif data == "withdraw":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Geri", callback_data="main_menu")]])
-        await query.edit_message_text("💸 Çıxarış bölməsi", reply_markup=kb)
-    elif data == "info":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Geri", callback_data="main_menu")]])
-        await query.edit_message_text("ℹ️ Məlumat bölməsi", reply_markup=kb)
-
-def main():
-    web_thread = threading.Thread(target=run_web)
-    web_thread.daemon = True
-    web_thread.start()
-
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(handle_callback))
-    print("Bot işə düşdü...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+Zəhmət olmasa bütün bu detalları nəzərə alaraq təmiz, tam və səhvsiz Python kodu (`bot.py`) tərtib et.
