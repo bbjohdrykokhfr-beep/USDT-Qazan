@@ -5,8 +5,9 @@ import asyncio
 import os
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from flask import Flask
+import threading
 
 # Render üçün mini veb-server (Port xətası verməməsi üçün)
 web_app = Flask(__name__)
@@ -24,8 +25,6 @@ BOT_USERNAME = "USDT_Qazan_bot"
 ADMIN_USERNAME = "@kullanc234"
 TRC20_WALLET = "TKf5cMmCqjR76gN62Vim9BaP3G5XL4a7kp"
 CHANNELS = ["@qizilanaliz", "@mercvekuponlarr", "@craftbetting"]
-
-ADMIN_IDS = [5878410437]
 
 TEXTS = {
     "az": {
@@ -258,7 +257,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "spin_menu":
         vip_st = is_vip(user_id)
-        notify_st = "✅ Aktiv" if user['notify_enabled'] else "❌ Deaktiv"
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton("🌀 Çarxı Fırlat", callback_data="do_spin")],
             [InlineKeyboardButton(t["back"], callback_data="main_menu")]
@@ -319,7 +317,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
 
     elif data == "withdraw":
-        reg_r, vip_r = get_ref_counts(user_id)
         vip_st = is_vip(user_id)
         text = f"💸 **Çıxarış**\n\nStatus: **{'👑 VIP' if vip_st else 'Adi'}**\nMüraciət üçün: {ADMIN_USERNAME}"
         kb = InlineKeyboardMarkup([[InlineKeyboardButton(t["back"], callback_data="main_menu")]])
@@ -331,13 +328,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("📢 **Tapşırıqlar**", reply_markup=InlineKeyboardMarkup(kb))
 
 def main():
-    # Veb serveri arxa planda işə salırıq ki, Render "port tapa bilmədim" deyib xəta verməsin
-    import threading
-    t = threading.Thread(target=run_web)
-    t.daemon = True
-    t.start()
+    # Veb serveri arxa planda işə salırıq
+    web_thread = threading.Thread(target=run_web)
+    web_thread.daemon = True
+    web_thread.start()
 
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_callback))
     print("Bot aktivdir...")
